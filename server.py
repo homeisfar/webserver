@@ -42,7 +42,6 @@ while	1:
     date = datetime.datetime.utcnow()
     dayofweek = day_of_week_convert(date.weekday())
 
-
     try:
         filename = parts[1][1:]
         filepath, file_ext = os.path.splitext(filename)
@@ -59,9 +58,17 @@ while	1:
             binfile = 1
 
         if contents is not None:
-            response = 'HTTP/1.1 200 OK\r\nDate: '+ dayofweek +', '+ str(date.strftime('%b')) +' '+ str(date.year) +' ' + str(date.hour) + ':' + str(date.minute) + ':' + str(date.second) + ' GMT' +'\r\n'
+            file_stats = os.stat(filename)
+            response = 'HTTP/1.1 200 OK\r\n'
+            connectionSocket.send(response.encode())
+            response = date.strftime("Date: %a, %d %b %Y %I:%M GMT\r\n")
             connectionSocket.send(response.encode())
             response = 'Server: Ali H Server\r\n'
+            connectionSocket.send(response.encode())
+            response = 'Content-length: ' + str(file_stats.st_size) + '\r\n'
+            connectionSocket.send(response.encode())
+            modifiedstamp = datetime.datetime.utcfromtimestamp(file_stats.st_mtime)
+            response = modifiedstamp.strftime("Last-Modified: %a, %d %b %Y %I:%M GMT\r\n")
             connectionSocket.send(response.encode())
             response = '\r\n'
             connectionSocket.send(response.encode())
