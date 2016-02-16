@@ -39,6 +39,8 @@ while	1:
     capitalizedSentence =	txtsentence.upper()
     txtsentence = txtsentence.replace('\r\n', ' ')
     parts = txtsentence.split(' ')
+    print (repr(sentence))
+    print (repr(txtsentence))
     print(capitalizedSentence)
     contents = None
     date = datetime.datetime.utcnow()
@@ -64,6 +66,13 @@ while	1:
         print (file_ext)
         binfile = 0
         MIME = None
+
+        if ('\r' in txtsentence or '\n' in txtsentence):
+            response = 'HTTP/1.1 400 Bad Request\r\n400 Bad Request. Malformed request.\r\n\r\n'
+            connectionSocket.send(response.encode())
+            raise CustomError('400 Bad Request')
+
+
         if (request != 'GET'):
             response = 'HTTP/1.1 501 Not Implemented\r\n501 Not Implemented. Only GET.\r\n\r\n'
             connectionSocket.send(response.encode())
