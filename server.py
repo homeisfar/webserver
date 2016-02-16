@@ -26,14 +26,23 @@ while	1:
     connectionSocket,	 addr =	serverSocket.accept()
     print ('new connection established from ' + str(addr))
     sentence = ''
-    while 1:
-        sentencebite = connectionSocket.recv(2048)
-        try:
-            sentence = sentence + sentencebite.decode()
-        except UnicodeDecodeError:
-            break
-        if (sentence.endswith('\r\n\r\n')):
-            break
+    # while 1:
+    #     sentencebite = connectionSocket.recv(2048)
+    #     try:
+    #         sentence = sentence + sentencebite.decode()
+    #     except UnicodeDecodeError:
+    #         break
+    #     if (sentence.endswith('\r\n\r\n')):
+    #         break
+
+
+    sentencebite = connectionSocket.recv(2048)
+    # try:
+    sentence = sentence + sentencebite.decode()
+    # except UnicodeDecodeError:
+        # break
+        # if (sentence.endswith('\r\n\r\n')):
+            # break
 
     txtsentence =	sentence
     capitalizedSentence =	txtsentence.upper()
@@ -49,16 +58,29 @@ while	1:
         filename = parts[1][1:]
         version = parts[2]
         request = parts[0]
-        host = parts[3] + ' ' + parts[4]
-        index = -1
+        # host = parts[3] + ' ' + parts[4]
+        ifModifiedIndex = -1
+        hostIndex = -1
         try:
-            index = parts.index("If-Modified-Since:")
+            ifModifiedIndex = parts.index("If-Modified-Since:")
         except ValueError:
             pass
-        ifModifiedRequestString = None
-        if (index > -1):
-            ifModifiedRequestString = parts[index+2] + ' ' + parts[index+3] + ' ' + parts[index+4] + ' ' + parts[index+5] + ' ' + parts[index+6]
 
+        try:
+            hostIndex = parts.index("Host:")
+        except ValueError:
+            pass
+
+        ifModifiedRequestString = None
+        host = None
+        if (ifModifiedIndex > -1):
+            ifModifiedRequestString = parts[ifModifiedIndex+2] + ' ' + parts[ifModifiedIndex+3] + ' ' + parts[ifModifiedIndex+4] + ' ' + parts[ifModifiedIndex+5] + ' ' + parts[ifModifiedIndex+6]
+
+        if (hostIndex > -1):
+            host = parts[hostIndex] + ' ' + parts[hostIndex+1]
+
+        print ("HOST")
+        print (host)
         print (parts)
         print (version)
         filepath, file_ext = os.path.splitext(filename)
@@ -126,7 +148,7 @@ while	1:
             # connectionSocket.send(response.encode())
 
             #NEED TO COMPARE MODIFIED DATES
-            if (index > -1):
+            if (ifModifiedIndex > -1):
                 try:
                     ifModifiedTimeObject = time.strptime(ifModifiedRequestString, "%d %b %Y %H:%M:%S %Z")
                 except ValueError:
@@ -178,6 +200,3 @@ while	1:
 
     print('Closing connection from' +str(addr))
     connectionSocket.close()
-
-def http_ver_check(arg):
-    pass
