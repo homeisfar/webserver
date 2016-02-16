@@ -57,7 +57,7 @@ while	1:
             pass
         ifModifiedRequestString = None
         if (index > -1):
-            ifModifiedRequestString = parts[index+2] + ' ' + parts[index+3] + ' ' + parts[index+4] + ' ' + parts[index+5]
+            ifModifiedRequestString = parts[index+2] + ' ' + parts[index+3] + ' ' + parts[index+4] + ' ' + parts[index+5] + ' ' + parts[index+6]
 
         print (parts)
         print (version)
@@ -111,14 +111,14 @@ while	1:
             file_stats = os.stat(filename)
             response = 'HTTP/1.1 200 OK\r\n'
             # connectionSocket.send(response.encode())
-            response = response + date.strftime("Date: %a, %d %b %Y %I:%M GMT\r\n")
+            response = response + date.strftime("Date: %a, %d %b %Y %I:%M:%S GMT\r\n")
             # connectionSocket.send(response.encode())
             response = response + 'Server: Ali H Server\r\n'
             # connectionSocket.send(response.encode())
             response = response + 'Content-Length: ' + str(file_stats.st_size) + '\r\n'
             # connectionSocket.send(response.encode())
             modifiedstamp = datetime.datetime.utcfromtimestamp(file_stats.st_mtime)
-            response = response + modifiedstamp.strftime("Last-Modified: %a, %d %b %Y %I:%M GMT\r\n")
+            response = response + modifiedstamp.strftime("Last-Modified: %a, %d %b %Y %I:%M:%S GMT\r\n")
             # connectionSocket.send(response.encode())
             response = response + 'Content-Type: ' + MIME + '\r\n'
             # connectionSocket.send(response.encode())
@@ -128,15 +128,18 @@ while	1:
             #NEED TO COMPARE MODIFIED DATES
             if (index > -1):
                 try:
-                    ifModifiedTimeObject = time.strptime(ifModifiedRequestString, "%d %b %Y %H:%M:%S")
+                    ifModifiedTimeObject = time.strptime(ifModifiedRequestString, "%d %b %Y %H:%M:%S %Z")
                 except ValueError:
-                    ifModifiedTimeObject = time.strptime(ifModifiedRequestString, "%d %b %Y %H:%M")
+                    ifModifiedTimeObject = time.strptime(ifModifiedRequestString, "%d %b %Y %H:%M:%S")
 
-                modifiedstamp = modifiedstamp.replace(minute=0)
+                # modifiedstamp = modifiedstamp.replace(second=0)
                 print ("FILE NOT MODIFIED?")
                 print (time.mktime(ifModifiedTimeObject) - time.mktime(modifiedstamp.timetuple()))
 
-                if (time.mktime(ifModifiedTimeObject) > time.mktime(modifiedstamp.timetuple())):
+                print (str(ifModifiedTimeObject))
+                print (str(modifiedstamp.timetuple()))
+
+                if (time.mktime(ifModifiedTimeObject) == time.mktime(modifiedstamp.timetuple())):
                     response = 'HTTP/1.1 304 Not Modified\r\n'
                     response = response + date.strftime("Date: %a, %d %b %Y %I:%M GMT\r\n")
                     response = response + 'Server: Ali H Server\r\n\r\n'
