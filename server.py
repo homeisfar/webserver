@@ -20,8 +20,6 @@ class CustomError(Exception):
         # Set some exception infomation
         self.msg = arg
 
-
-
 print	('The	server	 is	ready	to	receive')
 
 while	1:
@@ -33,7 +31,7 @@ while	1:
         try:
             sentence = sentence + sentencebite.decode()
         except UnicodeDecodeError:
-            pass
+            break
         if (sentence.endswith('\r\n\r\n')):
             break
 
@@ -50,6 +48,14 @@ while	1:
         version = parts[2]
         request = parts[0]
         host = parts[3] + ' ' + parts[4]
+        index = -1
+        try:
+            index = parts.index("If-Modified-Since:")
+        except ValueError:
+            pass
+        ifModifiedRequestString = None
+        if (index > -1):
+            ifModifiedRequestString = parts[index+2] + ' ' + parts[index+3] + ' ' + parts[index+4] + ' ' + parts[index+5]
 
         print (parts)
         print (version)
@@ -71,9 +77,9 @@ while	1:
         print ("host: " + host)
 
         if (not host.startswith("Host: ")):
-            response = 'HTTP/1.1 500 Internal Server Error\r\n500 Internal Server Error. Host line bad.\r\n\r\n'
+            response = 'HTTP/1.1 400 Bad Request\r\n400 Bad Request. Malformed request.\r\n\r\n'
             connectionSocket.send(response.encode())
-            raise CustomError('500 error occurred. Host line bad')
+            raise CustomError('400 Bad Request')
 
 
         if (file_ext == '.txt'):
@@ -95,24 +101,49 @@ while	1:
         if contents is not None:
             file_stats = os.stat(filename)
             response = 'HTTP/1.1 200 OK\r\n'
-            connectionSocket.send(response.encode())
-            response = date.strftime("Date: %a, %d %b %Y %I:%M GMT\r\n")
-            connectionSocket.send(response.encode())
-            response = 'Server: Ali H Server\r\n'
-            connectionSocket.send(response.encode())
-            response = 'Content-Length: ' + str(file_stats.st_size) + '\r\n'
-            connectionSocket.send(response.encode())
+            # connectionSocket.send(response.encode())
+            response = response + date.strftime("Date: %a, %d %b %Y %I:%M GMT\r\n")
+            # connectionSocket.send(response.encode())
+            response = response + 'Server: Ali H Server\r\n'
+            # connectionSocket.send(response.encode())
+            response = response + 'Content-Length: ' + str(file_stats.st_size) + '\r\n'
+            # connectionSocket.send(response.encode())
             modifiedstamp = datetime.datetime.utcfromtimestamp(file_stats.st_mtime)
-            response = modifiedstamp.strftime("Last-Modified: %a, %d %b %Y %I:%M GMT\r\n")
-            connectionSocket.send(response.encode())
-            response = 'Content-Type: ' + MIME + '\r\n'
-            connectionSocket.send(response.encode())
-            response = '\r\n'
-            connectionSocket.send(response.encode())
+            response = response + modifiedstamp.strftime("Last-Modified: %a, %d %b %Y %I:%M GMT\r\n")
+            # connectionSocket.send(response.encode())
+            response = response + 'Content-Type: ' + MIME + '\r\n'
+            # connectionSocket.send(response.encode())
+            response = response + '\r\n'
+            # connectionSocket.send(response.encode())
+
+            #NEED TO COMPARE MODIFIED DATES
+            if (index > -1):
+                try:
+                    ifModifiedTimeObject = time.strptime(ifModifiedRequestString, "%d %b %Y %H:%M:%S")
+                except ValueError:
+                    ifModifiedTimeObject = time.strptime(ifModifiedRequestString, "%d %b %Y %H:%M")
+
+                modifiedstamp = modifiedstamp.replace(minute=0)
+                print ("FILE NOT MODIFIED?")
+                print (time.mktime(ifModifiedTimeObject) - time.mktime(modifiedstamp.timetuple()))
+
+                if (time.mktime(ifModifiedTimeObject) > time.mktime(modifiedstamp.timetuple())):
+                    response = 'HTTP/1.1 304 Not Modified\r\n'
+                    response = response + date.strftime("Date: %a, %d %b %Y %I:%M GMT\r\n")
+                    response = response + 'Server: Ali H Server\r\n\r\n'
+                    binfile = 2
+
+            print("unencoded response:\n" + response)
             if (binfile == 0):
-                connectionSocket.send(contents.encode())
+                response = response + contents
+                connectionSocket.send(response.encode())
+            elif (binfile == 1):
+                response = response.encode()
+                response = response + contents
+                connectionSocket.send(response)
             else:
-                connectionSocket.send(contents)
+                response = response.encode()
+                connectionSocket.send(response)
         else:
             connectionSocket.send('HTTP/1.1 404 Not Found\r\n\r\n'.encode())
             connectionSocket.send('404 File not found'.encode())
